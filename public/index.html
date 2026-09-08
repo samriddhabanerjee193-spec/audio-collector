@@ -48,7 +48,6 @@
 
   <div class="card">
     <h1>Say the word clearly:</h1>
-    <!-- Injected dynamically from Flask app.py -->
     <div class="word" id="targetWord">"{{ target_word }}"</div>
 
     <button id="recordBtn">Tap to Record ({{ max_duration }}s)</button>
@@ -58,8 +57,9 @@
   <script>
     const recordBtn = document.getElementById('recordBtn');
     const statusDiv = document.getElementById('status');
+    
     const targetWord = "{{ target_word }}";
-    const maxDuration = parseInt("{{ max_duration }}", 10) || 5 // Duration in seconds from Flask
+    const maxDuration = parseInt("{{ max_duration }}", 10) || 1;
 
     recordBtn.addEventListener('click', async () => {
       try {
@@ -101,10 +101,9 @@
           }
         };
 
-        // Start recording cycle using maxDuration variable (converted to ms)
         mediaRecorder.start();
         recordBtn.disabled = true;
-        statusDiv.innerText = `Recording... (${maxDuration} sec)`;
+        statusDiv.innerText = "Recording... (" + maxDuration + " sec)";
         statusDiv.style.color = "#EF4444";
 
         setTimeout(() => {

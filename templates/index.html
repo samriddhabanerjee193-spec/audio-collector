@@ -48,16 +48,18 @@
 
   <div class="card">
     <h1>Say the word clearly:</h1>
-    <div class="word" id="targetWord">"YES"</div>
+    <div class="word" id="targetWord">"{{ target_word }}"</div>
 
-    <button id="recordBtn">Tap to Record (1s)</button>
+    <button id="recordBtn">Tap to Record ({{ max_duration }}s)</button>
     <div id="status"></div>
   </div>
 
   <script>
     const recordBtn = document.getElementById('recordBtn');
     const statusDiv = document.getElementById('status');
-    const targetWord = document.getElementById('targetWord').innerText.replace(/"/g, '').trim();
+    
+    const targetWord = "{{ target_word }}";
+    const maxDuration = parseInt("{{ max_duration }}", 10) || 1;
 
     recordBtn.addEventListener('click', async () => {
       try {
@@ -71,13 +73,13 @@
         mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
 
         mediaRecorder.onstop = async () => {
-          statusDiv.innerText = "Uploading to R2...";
+          statusDiv.innerText = "Uploading audio...";
           statusDiv.style.color = "#0070f3";
 
           const blob = new Blob(chunks, { type: 'audio/webm' });
           
           try {
-            const response = await fetch('/api/upload', {
+            const response = await fetch('/upload', {
               method: 'POST',
               headers: { 'X-Word-Label': targetWord },
               body: blob
@@ -99,15 +101,14 @@
           }
         };
 
-        // Start 1-second recording cycle
         mediaRecorder.start();
         recordBtn.disabled = true;
-        statusDiv.innerText = "Recording... (1 sec)";
+        statusDiv.innerText = "Recording... (" + maxDuration + " sec)";
         statusDiv.style.color = "#EF4444";
 
         setTimeout(() => {
           mediaRecorder.stop();
-        }, 1000);
+        }, maxDuration * 1000);
 
       } catch (err) {
         console.error(err);
