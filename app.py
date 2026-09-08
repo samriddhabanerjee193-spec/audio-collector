@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 # Target word and recording duration settings
 TARGET_WORD = "OCTOPUS"
-MAX_DURATION_SECONDS = 5
+MAX_DURATION_SECONDS = 1
 
 @app.route('/')
 def index():
