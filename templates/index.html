@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Sample Collector</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: #f4f4f9;
+      padding: 20px;
+      text-align: center;
+    }
+    .card {
+      background: white;
+      padding: 30px 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      max-width: 360px;
+      width: 100%;
+    }
+    h1 { font-size: 1.2rem; color: #666; margin-bottom: 8px; }
+    .word { font-size: 2.2rem; font-weight: 800; color: #111; margin-bottom: 24px; }
+    button {
+      width: 100%;
+      padding: 16px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: white;
+      background-color: #0070f3;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background-color 0.2s;
+    }
+    button:disabled { background-color: #ccc; }
+    #status { margin-top: 16px; font-size: 0.95rem; font-weight: 500; min-height: 24px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Say the word clearly:</h1>
+    <div class="word" id="targetWord">"YES"</div>
+
+    <button id="recordBtn">Tap to Record (1s)</button>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const recordBtn = document.getElementById('recordBtn');
+    const statusDiv = document.getElementById('status');
+    const targetWord = document.getElementById('targetWord').innerText.replace(/"/g, '').trim();
+
+    recordBtn.addEventListener('click', async () => {
+      try {
+        statusDiv.innerText = "Requesting mic access...";
+        statusDiv.style.color = "#666";
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        const chunks = [];
+
+        mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+
+        mediaRecorder.onstop = async () => {
+          statusDiv.innerText = "Uploading to R2...";
+          statusDiv.style.color = "#0070f3";
+
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+          
+          try {
+            const response = await fetch('/api/upload', {
+              method: 'POST',
+              headers: { 'X-Word-Label': targetWord },
+              body: blob
+            });
+
+            if (response.ok) {
+              statusDiv.innerText = "Saved successfully!";
+              statusDiv.style.color = "#10B981";
+            } else {
+              statusDiv.innerText = "Upload failed.";
+              statusDiv.style.color = "#EF4444";
+            }
+          } catch (err) {
+            statusDiv.innerText = "Network error during upload.";
+            statusDiv.style.color = "#EF4444";
+          } finally {
+            recordBtn.disabled = false;
+            stream.getTracks().forEach(track => track.stop());
+          }
+        };
+
+        // Start 1-second recording cycle
+        mediaRecorder.start();
+        recordBtn.disabled = true;
+        statusDiv.innerText = "Recording... (1 sec)";
+        statusDiv.style.color = "#EF4444";
+
+        setTimeout(() => {
+          mediaRecorder.stop();
+        }, 1000);
+
+      } catch (err) {
+        console.error(err);
+        statusDiv.innerText = "Microphone access denied.";
+        statusDiv.style.color = "#EF4444";
+        recordBtn.disabled = false;
+      }
+    });
+  </script>
+
+</body>
+</html>
